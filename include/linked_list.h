@@ -287,5 +287,6 @@ public:
 
     iterator begin() const noexcept { return iterator(mFirst); }
     iterator before_begin() const noexcept { return iterator(nullptr, mFirst); }
+    iterator before_end() const noexcept { return iterator(mLast, nullptr); }
     iterator end() const noexcept { return iterator(); }
 };

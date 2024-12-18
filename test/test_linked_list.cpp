@@ -211,6 +211,11 @@ TEST(LinkedListTest, can_use_iterators)
 
     ++it;
     EXPECT_THROW(*it, std::out_of_range);
+
+    it = list.before_end();
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_THROW(*it, std::out_of_range);
 }
 
 TEST(LinkedListTest, can_erase_first)
