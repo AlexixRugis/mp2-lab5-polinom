@@ -20,6 +20,9 @@ private:
             mDegree(((uint32_t)w << 24) | ((uint32_t)x << 16) | ((uint32_t)y << 8) | ((uint32_t)z))
         {}
 
+        bool operator==(const monomial& other) const { return mCoefficient == other.mCoefficient && mDegree == other.mDegree; }
+        bool operator!=(const monomial& other) const { return !operator==(other); }
+
         double coefficient() const noexcept { return mCoefficient; }
         void setCoefficient(double coefficient) { mCoefficient = coefficient; }
         uint32_t degree() const noexcept { return mDegree; }
@@ -42,6 +45,9 @@ public:
     {
         return parse_polynomial(str);
     }
+
+    bool operator==(const polynomial& other) const;
+    bool operator!=(const polynomial& other) const;
 
     polynomial operator+(const polynomial& other) const;
     polynomial& operator+=(const polynomial& other);

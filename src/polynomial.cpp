@@ -138,18 +138,40 @@ polynomial& polynomial::operator*=(double coefficient)
     return *this;
 }
 
+bool polynomial::operator==(const polynomial& other) const
+{
+    if (mMonomials.size() != other.mMonomials.size())
+    {
+        return false;
+    }
+
+    for (auto it1 = mMonomials.begin(), it2 = other.mMonomials.begin(); it1 != mMonomials.end() && it2 != other.mMonomials.end(); ++it1, ++it2)
+    {
+        if (*it1 != *it2)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool polynomial::operator!=(const polynomial& other) const
+{
+    return !operator==(other);
+}
+
 double polynomial::evaluate(double w, double x, double y, double z) const
 {
     double res = 0.0;
 
     for (auto it = mMonomials.begin(); it != mMonomials.end(); ++it)
     {
-        res += (*it).coefficient() * (
-            pow(w, static_cast<double>((*it).w())) +
-            pow(x, static_cast<double>((*it).x())) +
-            pow(y, static_cast<double>((*it).y())) +
-            pow(z, static_cast<double>((*it).z()))
-            );
+        res += (*it).coefficient() *
+            pow(w, static_cast<double>((*it).w())) *
+            pow(x, static_cast<double>((*it).x())) *
+            pow(y, static_cast<double>((*it).y())) *
+            pow(z, static_cast<double>((*it).z()));
     }
 
     return res;
