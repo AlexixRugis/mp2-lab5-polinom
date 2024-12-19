@@ -1,5 +1,8 @@
 #include "polynomial.h"
 #include <cmath>
+#include <algorithm>
+#include <map>
+#include <vector>
 
 polynomial polynomial::operator+(const polynomial& other) const
 {
@@ -7,7 +10,7 @@ polynomial polynomial::operator+(const polynomial& other) const
 
     auto it1 = mMonomials.begin();
     auto it2 = other.mMonomials.begin();
-    
+
     while (it1 != mMonomials.end() && it2 != other.mMonomials.end())
     {
         uint32_t deg1 = (*it1).degree();
@@ -17,13 +20,11 @@ polynomial polynomial::operator+(const polynomial& other) const
         {
             result.mMonomials.push_back(*it1);
             ++it1;
-        }
-        else if (deg2 > deg1)
+        } else if (deg2 > deg1)
         {
             result.mMonomials.push_back(*it2);
             ++it2;
-        }
-        else
+        } else
         {
             double coefficient = (*it1).coefficient() + (*it2).coefficient();
             if (coefficient != 0.0)
@@ -67,6 +68,46 @@ polynomial polynomial::operator*(double coefficient) const
 polynomial operator*(double coefficient, const polynomial& p)
 {
     return p * coefficient;
+}
+
+std::ostream& operator<<(std::ostream& ostr, const polynomial& p)
+{
+    if (p.mMonomials.size() == 0)
+    {
+        ostr << 0;
+        return ostr;
+    }
+
+    bool first = true;
+    for (auto& v : p.mMonomials)
+    {
+        if (!first && v.coefficient() > 0.0) ostr << '+';
+        first = false;
+
+        ostr << v.coefficient();
+        if (v.w())
+        {
+            ostr << "*w";
+            if (v.w() > 1) ostr << '^' << static_cast<int32_t>(v.w());
+        }
+        if (v.x())
+        {
+            ostr << "*x";
+            if (v.x() > 1) ostr << '^' << static_cast<int32_t>(v.x());
+        }
+        if (v.y())
+        {
+            ostr << "*y";
+            if (v.y() > 1) ostr << '^' << static_cast<int32_t>(v.y());
+        }
+        if (v.z())
+        {
+            ostr << "*z";
+            if (v.z() > 1) ostr << '^' << static_cast<int32_t>(v.z());
+        }
+    }
+
+    return ostr;
 }
 
 polynomial polynomial::operator-() const
@@ -186,25 +227,111 @@ polynomial polynomial::derivative_z() const
     return res;
 }
 
-std::variant<polynomial::monomial, std::string> polynomial::parse_monomial(const std::string& str, size_t& offset)
+std::variant<polynomial::monomial, syntax_error> polynomial::parse_monomial(const std::string& str, size_t& offset)
 {
-    double coefficient = std::stod(str, &offset);
+    std::string valid = "+-.1234567890wxyz";
+    if (valid.find(str[offset]) == std::string::npos)
+    {
+        return syntax_error{ offset, "Unexpected symbol" };
+    }
 
-    // TODO: parsing
+    std::string coefficient;
+    if (str[offset] == '+') ++offset;
+    while (offset < str.size() && (str[offset] == '-' || str[offset] == '.' || (str[offset] >= '0' && str[offset] <= '9')))
+    {
+        coefficient.push_back(str[offset]);
+        ++offset;
+    }
 
-    return std::variant<monomial, std::string>();
+    double coefd;
+    if (coefficient == "-") coefd = -1.0;
+    else if (coefficient.size() == 0) coefd = 1.0;
+    else
+    {
+        size_t coefl = 0;
+        coefd = std::stod(coefficient, &coefl);
+        if (coefl != coefficient.size()) return syntax_error{ offset, "Invalid coefficient!" };
+    }
+
+    uint8_t powers[4]{};
+
+    while (offset < str.size() && (str[offset] == 'w' || str[offset] == 'x' || str[offset] == 'y' || str[offset] == 'z'))
+    {
+        uint8_t& p = powers[str[offset] - 'w'];
+        if (p != 0)
+        {
+            return syntax_error{ offset,"Variables in monomes should be mentioned no more than once." };
+        }
+
+        p = 1;
+        ++offset;
+
+        if (offset == str.size()) break;
+        if (str[offset] == '^')
+        {
+            ++offset;
+            if (offset == str.size()) break;
+        }
+
+        std::string power;
+        while (offset < str.size() && (str[offset] >= '0' && str[offset] <= '9'))
+        {
+            power.push_back(str[offset++]);
+        }
+
+        if (power.size())
+        {
+            int32_t poweri = std::stoi(power);
+            if (poweri > 255) return syntax_error{ offset, "Too big power! Maximum supported power is 255" };
+            p = poweri;
+        }
+    }
+
+    return monomial(coefd, powers[0], powers[1], powers[2], powers[3]);
 }
 
-std::variant<polynomial, std::string> polynomial::parse_polynomial(const std::string& str)
+std::variant<polynomial, syntax_error> polynomial::parse_polynomial(const std::string& str)
 {
-    polynomial p;
-    size_t offset = 0;
+    std::string nospaces;
+    std::vector<size_t> originalIndices;
     
-    while (offset < str.size())
+    for (size_t i = 0; i < str.size(); ++i)
     {
-        auto res = parse_monomial(str, offset);
-        if (res.index()) return std::get<std::string>(res);
-        p.mMonomials.push_back(std::get<monomial>(res));
+        if (!isspace(str[i]))
+        {
+            nospaces.push_back(str[i]);
+            originalIndices.push_back(i);
+        }
+    }
+    originalIndices.push_back(str.size());
+
+    std::map<uint32_t, monomial> monomials;
+    size_t offset = 0;
+    while (offset < nospaces.size())
+    {
+        auto res = parse_monomial(nospaces, offset);
+        if (res.index())
+        {
+            syntax_error err = std::get<syntax_error>(res);
+            err.pos = originalIndices[err.pos];
+            return err;
+        }
+        monomial m = std::get<monomial>(res);
+
+        if (m.coefficient() == 0.0) continue;
+
+        if (monomials.count(m.degree()))
+        {
+            return syntax_error{ originalIndices[offset], "A polynomial must contain no more than one monomial of each degree." };
+        }
+
+        monomials[m.degree()] = m;
+    }
+
+    polynomial p;
+    for (auto it = monomials.rbegin(); it != monomials.rend(); ++it)
+    {
+        p.mMonomials.push_back(it->second);
     }
 
     return p;

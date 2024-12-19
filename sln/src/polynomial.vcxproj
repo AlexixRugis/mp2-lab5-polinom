@@ -153,6 +153,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\GitHub_Repos\mp2-lab5-polinom\src\polynomial.cpp" />
     <ClInclude Include="C:\GitHub_Repos\mp2-lab5-polinom\include\linked_list.h" />
     <ClInclude Include="C:\GitHub_Repos\mp2-lab5-polinom\include\polynomial.h" />
+    <ClInclude Include="C:\GitHub_Repos\mp2-lab5-polinom\include\syntax_error.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\GitHub_Repos\mp2-lab5-polinom\sln\ZERO_CHECK.vcxproj">

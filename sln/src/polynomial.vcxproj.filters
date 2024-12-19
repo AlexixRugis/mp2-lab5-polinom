@@ -12,6 +12,9 @@
     <ClInclude Include="C:\GitHub_Repos\mp2-lab5-polinom\include\polynomial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="C:\GitHub_Repos\mp2-lab5-polinom\include\syntax_error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\GitHub_Repos\mp2-lab5-polinom\src\CMakeLists.txt" />

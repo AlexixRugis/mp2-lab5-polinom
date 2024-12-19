@@ -1,8 +1,10 @@
 #pragma once
 #include "linked_list.h"
+#include "syntax_error.h"
 #include <cstdint>
 #include <string>
 #include <variant>
+#include <iostream>
 
 class polynomial
 {
@@ -29,14 +31,14 @@ private:
 
     linked_list<monomial> mMonomials;
 
-    static std::variant<monomial, std::string> parse_monomial(const std::string& str, size_t& offset);
-    static std::variant<polynomial, std::string> parse_polynomial(const std::string& str);
+    static std::variant<monomial, syntax_error> parse_monomial(const std::string& str, size_t& offset);
+    static std::variant<polynomial, syntax_error> parse_polynomial(const std::string& str);
 
     explicit polynomial(const std::string& strRepr) {}
 public:
     polynomial() {}
 
-    static std::variant<polynomial, std::string> from_string(const std::string& str)
+    static std::variant<polynomial, syntax_error> from_string(const std::string& str)
     {
         return parse_polynomial(str);
     }
@@ -49,6 +51,7 @@ public:
     polynomial operator*(double coefficient) const;
     friend polynomial operator*(double coefficient, const polynomial& p);
     polynomial& operator*=(double coefficient);
+    friend std::ostream& operator<<(std::ostream& ostr, const polynomial& p);
 
     double evaluate(double w, double x, double y, double z) const;
     polynomial derivative_w() const;
